@@ -1,0 +1,42 @@
+name: Build jupyter-pytorch image
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/pytorch-ci.yml'
+      - 'pytorch/**'
+  pull_request:
+    types:
+      - opened
+      - synchronize
+    paths:
+      - '.github/workflows/pytorch-ci.yml'
+      - 'pytorch/**'
+  workflow_dispatch:  # Allows to trigger the workflow manually in GitHub UI
+
+jobs:
+  build-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        with:
+          images: zjuici/jupyter
+          flavor: |
+            prefix=pytorch-
+      - name: Build Docker image
+        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+        with:
+          file: pytorch/Dockerfile
+          context: pytorch
+          push: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
