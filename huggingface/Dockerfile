@@ -1,0 +1,79 @@
+FROM pytorch/pytorch:2.0.0-cuda11.7-cudnn8-devel
+
+# common environemnt variables
+ENV NB_USER jovyan
+ENV NB_UID 1000
+ENV NB_PREFIX /
+ENV HOME /home/$NB_USER
+ENV SHELL /bin/bash
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y \
+  ca-certificates \
+  curl \
+  git
+
+RUN python -m pip install --upgrade --no-cache-dir pip
+
+# install - s6 overlay
+ARG S6_OVERLAY_VERSION=v3.1.5.0
+ARG S6_OVERLAY_ARCH="x86_64"
+RUN curl -LO "https://github.com/just-containers/s6-overlay/releases/download/${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz" \
+  && curl -LO "https://github.com/just-containers/s6-overlay/releases/download/${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz.sha256" \
+  && sha256sum -c s6-overlay-noarch.tar.xz.sha256 \
+  && tar -C / -Jxpf s6-overlay-noarch.tar.xz \
+  && rm -f s6-overlay-noarch.tar.xz \
+  && rm -f s6-overlay-noarch.tar.xz.sha256 \
+  && curl -LO "https://github.com/just-containers/s6-overlay/releases/download/${S6_OVERLAY_VERSION}/s6-overlay-${S6_OVERLAY_ARCH}.tar.xz" \
+  && curl -LO "https://github.com/just-containers/s6-overlay/releases/download/${S6_OVERLAY_VERSION}/s6-overlay-${S6_OVERLAY_ARCH}.tar.xz.sha256" \
+  && sha256sum -c s6-overlay-${S6_OVERLAY_ARCH}.tar.xz.sha256 \
+  && tar -C / -Jxpf s6-overlay-${S6_OVERLAY_ARCH}.tar.xz \
+  && rm -f s6-overlay-${S6_OVERLAY_ARCH}.tar.xz \
+  && rm -f s6-overlay-${S6_OVERLAY_ARCH}.tar.xz.sha256
+
+# install - kubectl
+RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" \
+  && curl -LO "https://dl.k8s.io/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl.sha256" \
+  && echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check \
+  && install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+# install - jupyterlab
+RUN python -m pip install --upgrade --no-cache-dir \
+  numpy \
+  scipy \
+  pandas \
+  jupyterlab \
+  ipywidgets
+
+# install - huggingface ecosystem
+RUN python -m pip install --upgrade --no-cache-dir \
+  transformers \
+  datasets \
+  peft \
+  accelerate \
+  bitsandbytes \
+  trl \
+  safetensors
+
+# create user and set required ownership
+RUN useradd -M -s /bin/bash -N -u ${NB_UID} ${NB_USER}
+RUN mkdir -p ${HOME} \
+  && chown -R ${NB_USER}:users ${HOME} \
+  && chown -R ${NB_USER}:users /usr/local/bin \
+  && chown -R ${NB_USER}:users /etc/s6-overlay
+
+# s6 - copy scripts
+COPY --chown=${NB_USER}:users s6/ /etc/
+RUN chmod a+x /etc/cont-init.d/* \
+  && chmod a+x /etc/services.d/code-server/*
+
+# s6 - 01-copy-tmp-home
+RUN mkdir -p /tmp_home \
+  && cp -r ${HOME} /tmp_home \
+  && chown -R ${NB_USER}:users /tmp_home
+
+USER $NB_UID
+
+EXPOSE 8888
+
+ENTRYPOINT ["/init"]
