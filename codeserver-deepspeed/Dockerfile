@@ -1,0 +1,97 @@
+FROM pytorch/pytorch:2.0.0-cuda11.7-cudnn8-devel
+
+# common environemnt variables
+ENV NB_USER jovyan
+ENV NB_UID 1000
+ENV NB_PREFIX /
+ENV HOME /home/$NB_USER
+ENV SHELL /bin/bash
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y \
+  ca-certificates \
+  curl \
+  git \
+  # following are required by deepspeed ops
+  # asunc_io
+  libaio-dev
+
+RUN python -m pip install --upgrade --no-cache-dir pip 
+
+# install - s6 overlay
+ARG S6_OVERLAY_VERSION=v3.1.5.0
+ARG S6_OVERLAY_ARCH="x86_64"
+RUN curl -LO "https://github.com/just-containers/s6-overlay/releases/download/${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz" \
+  && curl -LO "https://github.com/just-containers/s6-overlay/releases/download/${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz.sha256" \
+  && sha256sum -c s6-overlay-noarch.tar.xz.sha256 \
+  && tar -C / -Jxpf s6-overlay-noarch.tar.xz \
+  && rm -f s6-overlay-noarch.tar.xz \
+  && rm -f s6-overlay-noarch.tar.xz.sha256 \
+  && curl -LO "https://github.com/just-containers/s6-overlay/releases/download/${S6_OVERLAY_VERSION}/s6-overlay-${S6_OVERLAY_ARCH}.tar.xz" \
+  && curl -LO "https://github.com/just-containers/s6-overlay/releases/download/${S6_OVERLAY_VERSION}/s6-overlay-${S6_OVERLAY_ARCH}.tar.xz.sha256" \
+  && sha256sum -c s6-overlay-${S6_OVERLAY_ARCH}.tar.xz.sha256 \
+  && tar -C / -Jxpf s6-overlay-${S6_OVERLAY_ARCH}.tar.xz \
+  && rm -f s6-overlay-${S6_OVERLAY_ARCH}.tar.xz \
+  && rm -f s6-overlay-${S6_OVERLAY_ARCH}.tar.xz.sha256
+
+# install - kubectl
+RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" \
+  && curl -LO "https://dl.k8s.io/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl.sha256" \
+  && echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check \
+  && install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+# install - code-server
+ARG CODESERVER_VERSION=4.16.1
+RUN curl -LO "https://github.com/cdr/code-server/releases/download/v${CODESERVER_VERSION}/code-server_${CODESERVER_VERSION}_amd64.deb" \
+  && dpkg -i code-server_${CODESERVER_VERSION}_amd64.deb \
+  && rm -f code-server_${CODESERVER_VERSION}_amd64.deb
+
+RUN code-server --install-extension ms-python.python
+
+
+ENV DEEPSPEED_VERSION=v0.10.3
+# DeepSpeed v0.10.3 does not support compile sparse attention on torch 2.0
+# So I cannot build with DS_BUILD_OPS=1
+ENV DS_BUILD_OPS=0
+ENV DS_BUILD_AIO=1
+ENV DS_BUILD_CCL_COMM=1
+ENV DS_BUILD_CPU_ADAM=1
+ENV DS_BUILD_FUSED_ADAM=1
+ENV DS_BUILD_CPU_ADAGRAD=1
+ENV DS_BUILD_FUSED_LAMB=1
+ENV DS_BUILD_QUANTIZER=1
+ENV DS_BUILD_RANDOM_LTD=1
+ENV DS_BUILD_SPARSE_ATTN=0
+ENV DS_BUILD_SPATIAL_INFERENCE=1
+ENV DS_BUILD_TRANSFORMER=1
+ENV DS_BUILD_STOCHASTIC_TRANSFORMER=1
+ENV DS_BUILD_TRANSFORMER_INFERENCE=1
+
+RUN git clone https://github.com/microsoft/DeepSpeed.git /tmp/DeepSpeed \
+  && cd /tmp/DeepSpeed \
+  && git checkout ${DEEPSPEED_VERSION} \
+  && ./install.sh --allow_sudo \
+  && cd .. && rm -rf /tmp/DeepSpeed
+
+# create user and set required ownership
+RUN useradd -M -s /bin/bash -N -u ${NB_UID} ${NB_USER}
+RUN mkdir -p ${HOME} \
+  && chown -R ${NB_USER}:users ${HOME} \
+  && chown -R ${NB_USER}:users /usr/local/bin \
+  && chown -R ${NB_USER}:users /etc/s6-overlay
+
+# s6 - copy scripts
+COPY --chown=${NB_USER}:users s6/ /etc/
+RUN chmod a+x /etc/cont-init.d/* \
+  && chmod a+x /etc/services.d/code-server/*
+
+# s6 - 01-copy-tmp-home
+RUN mkdir -p /tmp_home \
+  && cp -r ${HOME} /tmp_home \
+  && chown -R ${NB_USER}:users /tmp_home
+
+USER $NB_UID
+
+EXPOSE 8888
+
+ENTRYPOINT ["/init"]
