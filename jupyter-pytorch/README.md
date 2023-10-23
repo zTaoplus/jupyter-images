@@ -2,6 +2,7 @@
 
 ## Version Matrix
 
-image version | jupyterlab version | ipywidgets version
---- | --- | ---
-zjuici/jupyter:pytorch-v0.3.1 | 4.0.6 | 8.1.1
+image version | jupyterlab version | ipywidgets version | pytorch version
+--- | --- | --- | ---
+zjuici/jupyter:0.4.0-pytorch | 4.0.7 | 8.1.1 | 2.1.0-cuda12.1-cudnn8
+zjuici/jupyter:pytorch-v0.3.1 | 4.0.6 | 8.1.1 | 2.0.0-cuda11.7-cudnn8
