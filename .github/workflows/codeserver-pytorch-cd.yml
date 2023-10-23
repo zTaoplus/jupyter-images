@@ -26,7 +26,7 @@ jobs:
         with:
           images: zjuici/codeserver
           flavor: |
-            suffix=-deepspeed
+            suffix=-pytorch
           tags: |
             # use custom value instead of git tag
             type=semver,pattern={{version}},value=0.4.0
