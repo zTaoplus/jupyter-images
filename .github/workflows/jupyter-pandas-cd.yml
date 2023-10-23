@@ -1,4 +1,4 @@
-name: Publish jupyter-huggingface image
+name: Publish jupyter-pandas image
 
 on:
   push:
@@ -26,12 +26,15 @@ jobs:
         with:
           images: zjuici/jupyter
           flavor: |
-            prefix=huggingface-
+            suffix=-pandas
+          tags: |
+            # use custom value instead of git tag
+            type=semver,pattern={{version}},value=0.4.0
       - name: Build and push Docker image
         uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
         with:
-          file: huggingface/Dockerfile
-          context: huggingface
+          file: jupyter-pandas/Dockerfile
+          context: jupyter-pandas
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

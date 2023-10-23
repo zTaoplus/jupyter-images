@@ -26,7 +26,10 @@ jobs:
         with:
           images: zjuici/codeserver
           flavor: |
-            prefix=pytorch-
+            suffix=-deepspeed
+          tags: |
+            # use custom value instead of git tag
+            type=semver,pattern={{version}},value=0.4.0
       - name: Build and push Docker image
         uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
         with:
