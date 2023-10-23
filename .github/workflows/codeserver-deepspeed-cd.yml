@@ -1,9 +1,9 @@
 name: Publish code-server-deepspeed image
 
 on:
-  push:
-    tags:
-      - v**
+  # push:
+  #   tags:
+  #     - v**
   workflow_dispatch:  # Allows to trigger the workflow manually in GitHub UI
 
 jobs:
