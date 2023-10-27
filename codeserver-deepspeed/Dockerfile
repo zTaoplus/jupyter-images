@@ -1,4 +1,4 @@
-FROM pytorch/pytorch:2.1.0-cuda12.1-cudnn8-devel
+FROM pytorch/pytorch:2.0.1-cuda11.7-cudnn8-devel
 
 # common environemnt variables
 ENV NB_USER jovyan
@@ -52,7 +52,6 @@ RUN code-server --install-extension ms-python.python
 ENV DEEPSPEED_VERSION=v0.11.1
 # DeepSpeed v0.10.3 does not support compile sparse attention on torch 2.0
 # So I cannot build with DS_BUILD_OPS=1
-# We need to confirm it as we upgraded to pytorch 2.1 and deepspeed 0.11.1
 ENV DS_BUILD_OPS=0
 ENV DS_BUILD_AIO=1
 ENV DS_BUILD_CCL_COMM=1
