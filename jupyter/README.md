@@ -1,4 +1,4 @@
-# Kubeflow jupyter-pandas notebook image
+# Kubeflow jupyter notebook image
 
 ## Version Matrix
 

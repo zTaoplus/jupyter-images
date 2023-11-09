@@ -1,10 +1,7 @@
-name: Publish jupyter-pandas image
+name: Publish jupyter-deepspeed image
 
 on:
-  # push:
-  #   tags:
-  #     - v**
-  workflow_dispatch:  # Allows to trigger the workflow manually in GitHub UI
+  workflow_dispatch: # Allows to trigger the workflow manually in GitHub UI
 
 jobs:
   build-and-push-image:
@@ -26,15 +23,15 @@ jobs:
         with:
           images: zjuici/jupyter
           flavor: |
-            suffix=-pandas
+            suffix=-deepspeed
           tags: |
             # use custom value instead of git tag
             type=semver,pattern={{version}},value=0.4.0
       - name: Build and push Docker image
         uses: docker/build-push-action@v5.0.0
         with:
-          file: jupyter-pandas/Dockerfile
-          context: jupyter-pandas
+          file: jupyter-deepspeed/Dockerfile
+          context: jupyter-deepspeed
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
