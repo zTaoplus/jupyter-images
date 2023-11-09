@@ -1,4 +1,4 @@
-FROM pytorch/pytorch:2.0.1-cuda11.7-cudnn8-devel
+FROM pytorch/pytorch:1.13.1-cuda11.6-cudnn8-devel
 
 # common environemnt variables
 ENV NB_USER jovyan
@@ -8,13 +8,10 @@ ENV HOME /home/$NB_USER
 ENV SHELL /bin/bash
 
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install --no-install-recommends -y \
   ca-certificates \
   curl \
-  git \
-  # following are required by deepspeed ops
-  # asunc_io
-  libaio-dev
+  git
 
 RUN python -m pip install --upgrade --no-cache-dir pip 
 
@@ -41,32 +38,39 @@ RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/s
   && install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
 # install - code-server
-ARG CODESERVER_VERSION=4.18.0
+# pytorch 1.13 use ubuntu 18.04 as base image, which ships node v
+# the latest code-server supports node v is 4.16.1
+ARG CODESERVER_VERSION=4.16.1
 RUN curl -LO "https://github.com/cdr/code-server/releases/download/v${CODESERVER_VERSION}/code-server_${CODESERVER_VERSION}_amd64.deb" \
   && dpkg -i code-server_${CODESERVER_VERSION}_amd64.deb \
   && rm -f code-server_${CODESERVER_VERSION}_amd64.deb
 
 RUN code-server --install-extension ms-python.python
 
+# install triton 1.0.0
+# should be as easy as `pip install triton==1.0.0`, but my pip can only find triton==2.0.0
+# see more @ <https://github.com/openai/triton/>
+ENV TRITON_VERSION=v1.0
+RUN apt-get update && apt-get install --no-install-recommends -y \
+  libtinfo-dev
+RUN python -m pip install --no-cache-dir ninja cmake wheel
+RUN git clone https://github.com/openai/triton.git /tmp/triton \
+  && cd /tmp/triton \
+  && git checkout ${TRITON_VERSION} \
+  && pip install -e python
 
-ENV DEEPSPEED_VERSION=v0.11.1
-# DeepSpeed v0.10.3 does not support compile sparse attention on torch 2.0
-# So I cannot build with DS_BUILD_OPS=1
-ENV DS_BUILD_OPS=0
-ENV DS_BUILD_AIO=1
-ENV DS_BUILD_CCL_COMM=1
-ENV DS_BUILD_CPU_ADAM=1
-ENV DS_BUILD_FUSED_ADAM=1
-ENV DS_BUILD_CPU_ADAGRAD=1
-ENV DS_BUILD_FUSED_LAMB=1
-ENV DS_BUILD_QUANTIZER=1
-ENV DS_BUILD_RANDOM_LTD=1
-ENV DS_BUILD_SPARSE_ATTN=0
-ENV DS_BUILD_SPATIAL_INFERENCE=1
-ENV DS_BUILD_TRANSFORMER=1
-ENV DS_BUILD_STOCHASTIC_TRANSFORMER=1
-ENV DS_BUILD_TRANSFORMER_INFERENCE=1
-
+# install deepspeed
+# pytorch 1.13 image ships nvcc in /usr/local/cuda/bin, which is not the correct nvcc
+# see <https://github.com/microsoft/DeepSpeed/issues/2684#issuecomment-1379666816>
+ENV PATH=/usr/local/cuda/bin:$PATH
+# TODO: migrate to newer versions
+# DeepSpeed >= v0.11.0 complains no async_io, although I have installed it.
+# DeepSpeed >- v0.10.0 complains about something else.
+ENV DEEPSPEED_VERSION=v0.9.5
+ENV DS_BUILD_OPS=1
+RUN apt-get update && apt-get install -y \
+  libaio1 \
+  libaio-dev
 RUN git clone https://github.com/microsoft/DeepSpeed.git /tmp/DeepSpeed \
   && cd /tmp/DeepSpeed \
   && git checkout ${DEEPSPEED_VERSION} \
