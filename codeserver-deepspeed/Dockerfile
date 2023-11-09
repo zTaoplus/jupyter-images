@@ -104,6 +104,8 @@ COPY --chown=${NB_USER}:users s6/ /etc/
 RUN chmod a+x /etc/services.d/code-server/*
 
 USER $NB_UID
+# path for pip install --user
+ENV PATH=${HOME}/.local/bin/:${PATH}
 
 EXPOSE 8888
 
