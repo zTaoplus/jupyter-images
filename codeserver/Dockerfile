@@ -57,15 +57,7 @@ RUN mkdir -p ${HOME} \
 
 # s6 - copy scripts
 COPY --chown=${NB_USER}:users s6/ /etc/
-RUN chmod a+x /etc/cont-init.d/* \
-  && chmod a+x /etc/services.d/code-server/*
-
-# s6 - 01-copy-tmp-home
-# copy randomly timeout, disable it
-ENV S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0
-RUN mkdir -p /tmp_home \
-  && cp -r ${HOME} /tmp_home \
-  && chown -R ${NB_USER}:users /tmp_home
+RUN chmod a+x /etc/services.d/code-server/*
 
 USER $NB_UID
 
