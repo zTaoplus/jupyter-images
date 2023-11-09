@@ -8,10 +8,21 @@ ENV HOME /home/$NB_USER
 ENV SHELL /bin/bash
 
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install --no-install-recommends -y \
-  ca-certificates \
-  curl \
-  git
+RUN apt-get update && apt-get install -yq --no-install-recommends \
+    apt-transport-https \
+    bzip2  \
+    ca-certificates \
+    curl \
+    git \
+    locales \
+    lsb-release \
+    unzip \
+    vim \
+    wget \
+    xz-utils \
+    zip \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 
 RUN python -m pip install --upgrade --no-cache-dir pip 
 
@@ -51,8 +62,10 @@ RUN code-server --install-extension ms-python.python
 # should be as easy as `pip install triton==1.0.0`, but my pip can only find triton==2.0.0
 # see more @ <https://github.com/openai/triton/>
 ENV TRITON_VERSION=v1.0
-RUN apt-get update && apt-get install --no-install-recommends -y \
-  libtinfo-dev
+RUN apt-get update && apt-get install -yq --no-install-recommends \
+    libtinfo-dev \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 RUN python -m pip install --no-cache-dir ninja cmake wheel
 RUN git clone https://github.com/openai/triton.git /tmp/triton \
   && cd /tmp/triton \
@@ -68,9 +81,11 @@ ENV PATH=/usr/local/cuda/bin:$PATH
 # DeepSpeed >- v0.10.0 complains about something else.
 ENV DEEPSPEED_VERSION=v0.9.5
 ENV DS_BUILD_OPS=1
-RUN apt-get update && apt-get install -y \
-  libaio1 \
-  libaio-dev
+RUN apt-get update && apt-get install -yq --no-install-recommends \
+    libaio1 \
+    libaio-dev \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 RUN git clone https://github.com/microsoft/DeepSpeed.git /tmp/DeepSpeed \
   && cd /tmp/DeepSpeed \
   && git checkout ${DEEPSPEED_VERSION} \

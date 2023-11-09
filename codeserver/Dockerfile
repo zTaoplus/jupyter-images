@@ -8,11 +8,21 @@ ENV HOME /home/$NB_USER
 ENV SHELL /bin/bash
 
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y \
-  xz-utils \
-  ca-certificates \
-  curl \
-  git
+RUN apt-get update && apt-get install -yq --no-install-recommends \
+    apt-transport-https \
+    bzip2  \
+    ca-certificates \
+    curl \
+    git \
+    locales \
+    lsb-release \
+    unzip \
+    vim \
+    wget \
+    xz-utils \
+    zip \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 
 RUN python -m pip install --upgrade --no-cache-dir pip
 
