@@ -27,7 +27,7 @@ RUN apt-get update && apt-get install -yq --no-install-recommends \
 RUN python -m pip install --upgrade --no-cache-dir pip 
 
 # install - s6 overlay
-ARG S6_OVERLAY_VERSION=v3.1.5.0
+ARG S6_OVERLAY_VERSION=v3.1.6.2
 ARG S6_OVERLAY_ARCH="x86_64"
 RUN curl -LO "https://github.com/just-containers/s6-overlay/releases/download/${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz" \
   && curl -LO "https://github.com/just-containers/s6-overlay/releases/download/${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz.sha256" \
