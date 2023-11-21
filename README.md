@@ -4,28 +4,38 @@
 
 This repository contains the Dockerfiles for the Jupyter images that can be used in kubeflow.
 
-There are currently 6 different images:
+There are currently 8 different images:
 
-- basic [JupyterLab](https://github.com/jupyterlab/jupyterlab) image
-- JupyterLab image with PyTorch
-- JupyterLab image with DeepSpeed
-- basic [code-server](https://github.com/coder/code-server) image
-- code-server image with PyTorch
-- code-server image with DeepSpeed
+- jupyter lab
+  - basic [JupyterLab](https://github.com/jupyterlab/jupyterlab) image
+  - JupyterLab image with [PyTorch](https://github.com/pytorch/pytorch)
+  - JupyterLab image with [DeepSpeed](https://github.com/microsoft/DeepSpeed)
+  - JupyterLab image with [text-generation-inference](https://github.com/huggingface/text-generation-inference)
+- codeserver
+  - basic [code-server](https://github.com/coder/code-server) image
+  - code-server image with [PyTorch](https://github.com/pytorch/pytorch)
+  - code-server image with [DeepSpeed](https://github.com/microsoft/DeepSpeed)
+  - code-server image with [text-generation-inference](https://github.com/huggingface/text-generation-inference)
 
 The basic idea is that we provide images with some complicated dependencies pre-installed, so that users can get started with their work without having to worry about the installation process. These complicated dependencies includes:
 
 - PyTorch: not too difficult to install, but it's a large package and it takes a long time.
 - DeepSpeed: requires compile from source to enable all features, which has complicated dependency matrix.
+- text-generation-inference: requires to build a lot of kernels, while provides an ease-to-use Docker image. We leverage its Docker image.
 
-## Special Image Dependencies
+## Core Dependencies
 
 image | tag | PyTorch | cuda | cudnn
 ---|---|---|---|---
-zjuici/jupyter | 0.5.0-pytorch | 2.0.1 | 11.7 | cudnn8
-zjuici/codeserver | 0.5.0-pytorch | 2.0.1 | 11.7 | cudnn8
+zjuici/jupyter | 0.6.0-pytorch | 2.0.1 | 11.7 | cudnn8
+zjuici/codeserver | 0.6.0-pytorch | 2.0.1 | 11.7 | cudnn8
 
 image | tag | DeepSpeed | PyTorch | cuda | cudnn
 ---|---|---|---|---|---
-zjuici/jupyter | 0.5.0-deepspeed | v0.9.5 | 1.13.1 | 11.6 | cudnn8
+zjuici/jupyter | 0.6.0-deepspeed | v0.9.5 | 1.13.1 | 11.6 | cudnn8
 zjuici/codeserver | 0.5.0-deepspeed | v0.9.5 | 1.13.1 | 11.6 | cudnn8
+
+image | tag | TGI | PyTorch | cuda | cudnn
+---|---|---|---|---|---
+zjuici/jupyter | 0.6.0-tgi | v1.1.1 | 2.0.1 | 11.8 | cudnn8
+zjuici/codeserver | 0.6.0-tgi | v1.1.1 | 2.0.1 | 11.8 | cudnn8
